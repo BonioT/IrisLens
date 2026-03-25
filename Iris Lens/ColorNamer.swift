@@ -51,8 +51,19 @@ struct ColorNamer {
         var minDistance = Double.infinity
         var closestColor = "Unknown"
         
+        let r1 = r * 255
+        let g1 = g * 255
+        let b1 = b * 255
+        
         for color in colors {
-            let distance = pow(color.r - r * 255, 2) + pow(color.g - g * 255, 2) + pow(color.b - b * 255, 2)
+            let dr = color.r - r1
+            let dg = color.g - g1
+            let db = color.b - b1
+            
+            // Weighted Euclidean distance for better human perception approximation
+            // Red and Green are weighted more than Blue.
+            let distance = 2 * pow(dr, 2) + 4 * pow(dg, 2) + 3 * pow(db, 2)
+            
             if distance < minDistance {
                 minDistance = distance
                 closestColor = color.name

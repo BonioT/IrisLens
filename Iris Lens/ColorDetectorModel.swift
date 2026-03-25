@@ -184,15 +184,15 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
                 background = background.applyingFilter("CIColorControls", parameters: [kCIInputSaturationKey: 0.0])
             }
             background = background.applyingFilter("CIColorControls", parameters: [
-                kCIInputBrightnessKey: -0.15,
-                kCIInputSaturationKey: isGrayscaleEnabled ? 0.0 : 0.85,
+                kCIInputBrightnessKey: -0.30, // Darker
+                kCIInputSaturationKey: isGrayscaleEnabled ? 0.0 : 0.50, // More muted
                 kCIInputContrastKey: 1.1
             ])
-            let blurredBackground = background.applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 1.5]).cropped(to: extent)
+            let blurredBackground = background.applyingFilter("CIGaussianBlur", parameters: [kCIInputRadiusKey: 4.0]).cropped(to: extent) // More blur
             
             let boosted = original.applyingFilter("CIColorControls", parameters: [
                 kCIInputBrightnessKey: 0.15,
-                kCIInputSaturationKey: 1.8,
+                kCIInputSaturationKey: 2.8, // Stronger saturation
                 kCIInputContrastKey: 1.2
             ])
             
@@ -236,13 +236,28 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
             samplePoint = CGPoint(x: image.extent.midX, y: image.extent.midY)
         }
         
-        let rect = CGRect(origin: samplePoint, size: CGSize(width: 1, height: 1))
-        var bitmap = [UInt8](repeating: 0, count: 4)
-        ciContext.render(image, toBitmap: &bitmap, rowBytes: 4, bounds: rect, format: .RGBA8, colorSpace: nil)
+        // Sample a 5x5 area to reduce noise
+        let sampleSize: CGFloat = 5
+        let offset = (sampleSize - 1) / 2
+        let rect = CGRect(x: samplePoint.x - offset, y: samplePoint.y - offset, width: sampleSize, height: sampleSize)
         
-        let r = Double(bitmap[0]) / 255.0
-        let g = Double(bitmap[1]) / 255.0
-        let b = Double(bitmap[2]) / 255.0
+        var bitmap = [UInt8](repeating: 0, count: Int(4 * sampleSize * sampleSize))
+        ciContext.render(image, toBitmap: &bitmap, rowBytes: Int(4 * sampleSize), bounds: rect, format: .RGBA8, colorSpace: nil)
+        
+        var totalR: Double = 0
+        var totalG: Double = 0
+        var totalB: Double = 0
+        
+        let pixelCount = sampleSize * sampleSize
+        for i in 0..<Int(pixelCount) {
+            totalR += Double(bitmap[i * 4])
+            totalG += Double(bitmap[i * 4 + 1])
+            totalB += Double(bitmap[i * 4 + 2])
+        }
+        
+        let r = (totalR / pixelCount) / 255.0
+        let g = (totalG / pixelCount) / 255.0
+        let b = (totalB / pixelCount) / 255.0
         
         let colorName = ColorNamer.name(for: r, g: g, b: b)
         let colorValue = Color(red: r, green: g, blue: b)
