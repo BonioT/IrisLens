@@ -10,9 +10,16 @@ import SwiftUI
 import Combine
 import CoreImage
 import Photos
+import PhotosUI
 import UIKit
 
+/// The main ViewModel for the application, handling camera session, image processing,
+/// and state management for the user interface.
 class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSampleBufferDelegate {
+    
+    // MARK: - UI State Properties
+    
+    /// The processed frame (with color masks applied) ready to be displayed in the UI.
     @Published var processedFrame: CGImage?
     
     @Published var selectedMode: VisionMode = .normal {
@@ -27,6 +34,15 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
     @Published var selectedColor: Color = .clear
     @Published var lastTapPoint: CGPoint?
     
+    /// The currently selected item from the Photos picker.
+    /// Setting this triggers an asynchronous load of the image data.
+    @Published var selectedPickerItem: PhotosPickerItem? {
+        didSet {
+            Task { await loadImportedImage(from: selectedPickerItem) }
+        }
+    }
+    
+    /// A static image imported from the gallery, replacing the live camera feed.
     @Published var importedImage: UIImage? {
         didSet {
             if let uiImage = importedImage {
@@ -91,6 +107,21 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
         importedImage = nil
         isFrozen = false
         setZoom(1.0)
+    }
+    
+    /// Loads an image asynchronously from a PhotosPickerItem and sets it as the active image.
+    @MainActor
+    private func loadImportedImage(from item: PhotosPickerItem?) async {
+        guard let item = item else { return }
+        do {
+            if let data = try await item.loadTransferable(type: Data.self),
+               let uiImage = UIImage(data: data) {
+                self.importedImage = uiImage
+                self.setZoom(1.0)
+            }
+        } catch {
+            print("Failed to load image from PhotosPickerItem: \(error)")
+        }
     }
     
     func saveCurrentFrameToPhotos() {
@@ -167,6 +198,8 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
     
     private var capturedOriginalCI: CIImage?
     
+    /// Processes a Core Image, applies the 3D LUT (Color Cube) for highlighting,
+    /// and generates the final composited image.
     private func processCIImage(_ original: CIImage) {
         capturedOriginalCI = original
         let extent = original.extent
@@ -275,6 +308,8 @@ class ColorDetectorModel: NSObject, ObservableObject, AVCaptureVideoDataOutputSa
         return data
     }
     
+    /// Generates the 3D Color LUT data (Cube) for the selected vision mode.
+    /// Evaluates every RGB node in a 64x64x64 cube to see if it matches the tracked color ranges.
     private func createCubeData(for mode: VisionMode) -> Data {
         let count = cubeSize * cubeSize * cubeSize
         var cubeData = [Float](repeating: 0, count: count * 4)

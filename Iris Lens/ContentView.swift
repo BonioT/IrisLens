@@ -8,10 +8,12 @@
 import SwiftUI
 import PhotosUI
 
+/// The main user interface view for the Iris Lens application.
+/// It observes the `ColorDetectorModel` to display the live camera feed or imported images,
+/// and provides controls for zooming, freezing, and saving the processed image.
 struct ContentView: View {
     @StateObject private var model = ColorDetectorModel()
     @State private var showInfo = false
-    @State private var selectedPickerItem: PhotosPickerItem?
     
     // Zoom states for local image manipulation (frozen/gallery)
     @State private var currentZoom: CGFloat = 1.0
@@ -66,15 +68,6 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showInfo) {
             InfoSheet()
-        }
-        .onChange(of: selectedPickerItem) { newItem in
-            Task {
-                if let data = try? await newItem?.loadTransferable(type: Data.self),
-                   let uiImage = UIImage(data: data) {
-                    model.importedImage = uiImage
-                    currentZoom = 1.0
-                }
-            }
         }
         .preferredColorScheme(.dark)
     }
@@ -209,7 +202,7 @@ struct ContentView: View {
     }
     
     private var importButton: some View {
-        PhotosPicker(selection: $selectedPickerItem, matching: .images) {
+        PhotosPicker(selection: $model.selectedPickerItem, matching: .images) {
             Image(systemName: "photo.fill")
                 .font(.system(size: 22))
                 .foregroundStyle(.white)

@@ -7,6 +7,9 @@
 
 import SwiftUI
 
+/// Defines the various vision modes supported by the application.
+/// Each mode corresponds to a specific type of color vision deficiency (CVD)
+/// and determines which color ranges should be isolated and highlighted.
 enum VisionMode: String, CaseIterable, Identifiable {
     case deuteranomaly
     case protanomaly
@@ -15,6 +18,7 @@ enum VisionMode: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
+    /// A short symbol used in UI components (e.g., segmented controls).
     var symbol: String {
         switch self {
         case .deuteranomaly: return "D"
@@ -24,6 +28,7 @@ enum VisionMode: String, CaseIterable, Identifiable {
         }
     }
     
+    /// The full, human-readable title of the vision mode.
     var title: String {
         switch self {
         case .deuteranomaly: return "Deuteranomaly (D)"
@@ -33,6 +38,7 @@ enum VisionMode: String, CaseIterable, Identifiable {
         }
     }
     
+    /// A brief description of the deficiency, used in informational UI sheets.
     var description: String {
         switch self {
         case .deuteranomaly:

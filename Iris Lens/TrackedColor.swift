@@ -7,6 +7,8 @@
 
 import SwiftUI
 
+/// Represents the specific primary colors that the application can track and highlight.
+/// Contains the mathematical HSV bounds for each color to generate accurate 3D Color LUTs.
 enum TrackedColor: String, CaseIterable, Identifiable {
     case red
     case green
@@ -15,6 +17,8 @@ enum TrackedColor: String, CaseIterable, Identifiable {
     
     var id: String { rawValue }
     
+    /// The hue range in degrees (0-360) corresponding to this color in the HSV color space.
+    /// Note: Red crosses the 0-degree mark, so its min is higher than its max (330 to 30).
     var hueRangeDegrees: (min: Double, max: Double) {
         switch self {
         case .red:    return (min: 330, max: 30)
@@ -24,6 +28,8 @@ enum TrackedColor: String, CaseIterable, Identifiable {
         }
     }
     
+    /// The minimum saturation threshold (0.0 - 1.0) required to consider a pixel as matching this color.
+    /// This prevents highlighting desaturated/grayish objects like concrete or shadows.
     var minSaturation: Double {
         switch self {
         case .red:    return 0.20
@@ -33,6 +39,8 @@ enum TrackedColor: String, CaseIterable, Identifiable {
         }
     }
     
+    /// The minimum brightness/value threshold (0.0 - 1.0) required to consider a pixel as matching this color.
+    /// This prevents highlighting extremely dark/black objects.
     var minValue: Double {
         switch self {
         case .red:    return 0.15

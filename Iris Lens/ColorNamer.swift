@@ -7,7 +7,10 @@
 
 import SwiftUI
 
+/// A utility struct responsible for matching RGB pixel data to human-readable color names.
 struct ColorNamer {
+    
+    /// Represents a predefined color with its standard RGB values (0-255).
     struct NamedColor {
         let name: String
         let r: Double
@@ -15,6 +18,7 @@ struct ColorNamer {
         let b: Double
     }
     
+    /// A dictionary of standard colors used as reference points for the nearest-neighbor algorithm.
     static let colors: [NamedColor] = [
         NamedColor(name: "Black", r: 0, g: 0, b: 0),
         NamedColor(name: "White", r: 255, g: 255, b: 255),
@@ -47,10 +51,22 @@ struct ColorNamer {
         NamedColor(name: "Crimson", r: 220, g: 20, b: 60)
     ]
     
+    /// Compares an input RGB color against the predefined color palette to find the closest match.
+    ///
+    /// This function uses a Weighted Euclidean Distance algorithm to approximate human color perception.
+    /// The human eye is more sensitive to green and red than it is to blue. Therefore, differences in
+    /// the green channel are penalized more heavily than differences in the blue channel.
+    ///
+    /// - Parameters:
+    ///   - r: The normalized red value (0.0 to 1.0).
+    ///   - g: The normalized green value (0.0 to 1.0).
+    ///   - b: The normalized blue value (0.0 to 1.0).
+    /// - Returns: A `String` representing the name of the closest matching color.
     static func name(for r: Double, g: Double, b: Double) -> String {
         var minDistance = Double.infinity
         var closestColor = "Unknown"
         
+        // Convert normalized values (0.0-1.0) back to standard 8-bit scale (0-255) for comparison.
         let r1 = r * 255
         let g1 = g * 255
         let b1 = b * 255
@@ -60,8 +76,8 @@ struct ColorNamer {
             let dg = color.g - g1
             let db = color.b - b1
             
-            // Weighted Euclidean distance for better human perception approximation
-            // Red and Green are weighted more than Blue.
+            // Weighted Euclidean distance: 2*ΔR^2 + 4*ΔG^2 + 3*ΔB^2
+            // Green is weighted most (4), followed by Blue (3), then Red (2).
             let distance = 2 * pow(dr, 2) + 4 * pow(dg, 2) + 3 * pow(db, 2)
             
             if distance < minDistance {
